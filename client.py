@@ -1,21 +1,32 @@
-import socket  # Thư viện socket để kết nối tới server
+import socket  # Thư viện socket
 
-HOST = '127.0.0.1'  # IP server (ở đây là cùng máy)
-PORT = 65432        # Cổng kết nối
+HOST = '127.0.0.1'  # IP server
+PORT = 65432        # Cổng server
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Tạo socket TCP
-client.connect((HOST, PORT))                                # Kết nối đến server
+# Tạo socket TCP
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect((HOST, PORT))  # Kết nối đến server
 
-# Nhận lời chào từ server (Bạn là Player 1 hoặc 2)
-welcome = client.recv(1024).decode()
+welcome = client.recv(1024).decode()  # Nhận thông báo Player 1/2
 print(welcome)
 
+# Vòng lặp chơi game
 while True:
-    prompt = client.recv(1024).decode()  # Nhận yêu cầu nhập nước đi
-    print(prompt)
+    try:
+        prompt = client.recv(1024).decode()  # Nhận lời nhắc nhập nước đi hoặc kết quả
+        print(prompt)
 
-    move = input(">> ").strip()          # Nhập lựa chọn từ bàn phím
-    client.sendall(move.encode())        # Gửi lên server
+        # Nếu kết thúc game thì thoát vòng lặp
+        if "Game Over" in prompt:
+            break
 
-    result = client.recv(1024).decode()  # Nhận kết quả từ server
-    print(result)
+        move = input(">> ").strip()          # Nhập nước đi từ bàn phím
+        client.sendall(move.encode())        # Gửi về server
+
+        result = client.recv(1024).decode()  # Nhận kết quả vòng chơi
+        print(result)
+
+    except:
+        break  # Nếu lỗi thì thoát game
+
+client.close()  # Đóng kết nối sau khi kết thúc
