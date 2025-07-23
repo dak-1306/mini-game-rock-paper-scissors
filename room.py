@@ -7,7 +7,9 @@ class Room:
         self.choices = {}
         self.scores = {1: 0, 2: 0}
         self.round = 1
+        self.total_rounds = None  # Sẽ được set khi người chơi đầu tiên chọn
         self.lock = threading.Lock()
+        self.waiting_for_rounds = True  # Đợi người chơi đầu tiên chọn số vòng
 
     def is_waiting(self):
         return len(self.players) == 1
@@ -20,13 +22,25 @@ class Room:
         self.players[player_id] = conn
         return player_id
 
+    def set_total_rounds(self, rounds):
+        """Set số vòng chơi cho phòng"""
+        self.total_rounds = rounds
+        self.waiting_for_rounds = False
+
     def run_game(self):
         print(f"[Room {self.room_id}] Game started with 2 players.")
-        total_rounds = 3
+        
+        # Đợi cho đến khi có số vòng được set
+        while self.waiting_for_rounds:
+            threading.Event().wait(0.1)
+        
+        # Thông báo số vòng cho cả 2 người chơi
+        for pid, conn in self.players.items():
+            conn.sendall(f"\nGame will be played for {self.total_rounds} rounds. Let's start!\n".encode())
 
-        while self.round <= total_rounds:
+        while self.round <= self.total_rounds:
             for pid, conn in self.players.items():
-                conn.sendall(f"\nRound {self.round}/3 - Your move (rock/paper/scissors): ".encode())
+                conn.sendall(f"\nRound {self.round}/{self.total_rounds} - Your move (rock/paper/scissors): ".encode())
 
             for pid, conn in self.players.items():
                 try:

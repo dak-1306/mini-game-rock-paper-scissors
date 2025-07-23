@@ -33,7 +33,23 @@ def handle_client(conn, addr):
 
         # Thêm client vào phòng
         player_id = target_room.add_player(conn)
-        conn.sendall(f"You are Player {player_id} in Room {target_room.room_id}".encode())
+        
+        # Nếu là người chơi đầu tiên, yêu cầu chọn số vòng
+        if player_id == 1:
+            conn.sendall(f"Welcome! You are Player {player_id} in Room {target_room.room_id}\nPlease choose number of rounds (3, 5, 7, or any odd number): ".encode())
+            try:
+                rounds_choice = conn.recv(1024).decode().strip()
+                rounds = int(rounds_choice)
+                if rounds <= 0 or rounds % 2 == 0:
+                    conn.sendall("Invalid choice. Setting to default 3 rounds.".encode())
+                    rounds = 3
+                target_room.set_total_rounds(rounds)
+                conn.sendall(f"Great! Game will be {rounds} rounds. Waiting for another player...".encode())
+            except:
+                target_room.set_total_rounds(3)
+                conn.sendall("Invalid input. Set to default 3 rounds. Waiting for another player...".encode())
+        else:
+            conn.sendall(f"You are Player {player_id} in Room {target_room.room_id}\nGame will be {target_room.total_rounds} rounds. Starting game...".encode())
 
         # Nếu đủ 2 người thì bắt đầu
         if target_room.is_full():
