@@ -14,7 +14,8 @@ class RockPaperScissorsClient:
                 if not data:
                     break
                 print(data)
-                if "Game Over" in data:
+                # Chỉ thoát khi nhận được message "Goodbye" thay vì "Game Over"
+                if "Goodbye" in data or "Thanks for playing" in data:
                     self.running = False
             except:
                 break
@@ -41,7 +42,7 @@ class RockPaperScissorsClient:
 
 if __name__ == "__main__":
     HOST = '127.0.0.1' if len(sys.argv) < 2 else sys.argv[1]
-    PORT = 65432 if len(sys.argv) < 3 else int(sys.argv[2])
+    PORT = 65433 if len(sys.argv) < 3 else int(sys.argv[2])  # Cập nhật port mới
     
     game_client = RockPaperScissorsClient()
     game_client.connect(HOST, PORT)
