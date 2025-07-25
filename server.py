@@ -17,6 +17,8 @@ lock = threading.Lock()
 def handle_client(conn, addr):
     global room_id
     print(f"[+] New connection from {addr}")
+    target_room = None
+    player_id = None
 
     try:
         with lock:
@@ -56,18 +58,51 @@ def handle_client(conn, addr):
             # Nếu đủ 2 người thì bắt đầu
             if target_room.is_full():
                 threading.Thread(target=target_room.run_game).start()
+                # Không cleanup ngay lập tức khi game vừa bắt đầu
+                return
                 
     except Exception as e:
         print(f"Error handling client {addr}: {e}")
+        # Xử lý disconnect
+        if target_room and player_id:
+            target_room.handle_disconnect(player_id)
     finally:
-        # Dọn dẹp phòng rỗng
-        cleanup_empty_rooms()
+        # Chỉ cleanup khi có lỗi hoặc khi game chưa bắt đầu
+        if not (target_room and target_room.is_full() and target_room.game_in_progress):
+            cleanup_empty_rooms()
 
 def cleanup_empty_rooms():
     """Dọn dẹp các phòng rỗng hoặc đã kết thúc"""
     global rooms
-    # Tạm thời vô hiệu hóa cleanup để tránh gây lỗi
-    pass
+    with lock:
+        active_rooms = []
+        for room in rooms:
+            should_keep = False
+            
+            # Giữ phòng nếu đang có game trong progress
+            if room.game_in_progress and len(room.players) > 0:
+                should_keep = True
+            # Giữ phòng nếu có 1 player đang chờ (chưa trong game)
+            elif len(room.players) == 1 and not room.game_in_progress:
+                should_keep = True
+            # Giữ phòng nếu có 2 players (dù chưa bắt đầu game)
+            elif len(room.players) == 2:
+                should_keep = True
+            
+            if should_keep:
+                active_rooms.append(room)
+            else:
+                # Phòng thực sự rỗng hoặc đã kết thúc hoàn toàn
+                print(f"[Cleanup] Removing empty room {room.room_id}")
+                # Đóng tất cả connections còn lại trong phòng
+                for pid, conn in list(room.players.items()):
+                    try:
+                        conn.close()
+                    except:
+                        pass
+        
+        rooms = active_rooms
+        print(f"[Cleanup] Active rooms: {len(rooms)}")
 
 def main():
     print("[*] Server started.")

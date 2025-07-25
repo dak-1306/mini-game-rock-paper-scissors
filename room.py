@@ -11,6 +11,7 @@ class Room:
         self.lock = threading.Lock()
         self.waiting_for_rounds = True  # Đợi người chơi đầu tiên chọn số vòng
         self.game_in_progress = False  # Đánh dấu game đang diễn ra
+        self.active_players = set()  # Theo dõi players còn kết nối
 
     def is_waiting(self):
         return len(self.players) == 1 and not self.game_in_progress
@@ -21,7 +22,67 @@ class Room:
     def add_player(self, conn):
         player_id = 1 if 1 not in self.players else 2
         self.players[player_id] = conn
+        self.active_players.add(player_id)
         return player_id
+
+    def remove_player(self, player_id):
+        """Remove player khi disconnect"""
+        if player_id in self.players:
+            try:
+                self.players[player_id].close()
+            except:
+                pass
+            del self.players[player_id]
+        self.active_players.discard(player_id)
+        print(f"[Room {self.room_id}] Player {player_id} disconnected")
+
+    def check_connection(self, player_id):
+        """Kiểm tra kết nối của player"""
+        if player_id not in self.players:
+            return False
+        try:
+            conn = self.players[player_id]
+            # Thử gửi 1 byte để test connection
+            original_timeout = conn.gettimeout()
+            conn.settimeout(0.1)
+            conn.send(b'')
+            conn.settimeout(original_timeout)
+            return True
+        except (ConnectionResetError, ConnectionAbortedError, OSError):
+            # Connection đã đóng
+            return False
+        except Exception as e:
+            # Các lỗi khác, coi như connection vẫn OK
+            print(f"[Room {self.room_id}] Connection check warning for Player {player_id}: {e}")
+            return True
+        finally:
+            try:
+                conn.settimeout(original_timeout)
+            except:
+                pass
+
+    def handle_disconnect(self, disconnected_player_id):
+        """Xử lý khi có player disconnect"""
+        print(f"[Room {self.room_id}] Handling disconnect for Player {disconnected_player_id}")
+        
+        # Remove player bị disconnect
+        self.remove_player(disconnected_player_id)
+        
+        # Thông báo cho player còn lại
+        remaining_player_id = 2 if disconnected_player_id == 1 else 1
+        if remaining_player_id in self.players:
+            try:
+                self.players[remaining_player_id].sendall(
+                    f"\nPlayer {disconnected_player_id} has disconnected. You win by default!\nThanks for playing! Goodbye!\n".encode()
+                )
+                self.players[remaining_player_id].close()
+            except:
+                pass
+            self.remove_player(remaining_player_id)
+        
+        # Đánh dấu game kết thúc
+        self.game_in_progress = False
+        return True  # Phòng cần được dọn dẹp
 
     def set_total_rounds(self, rounds):
         """Set số vòng chơi cho phòng"""
@@ -72,12 +133,27 @@ class Room:
     def play_rounds(self):
         """Chơi các vòng của game"""
         while self.round <= self.total_rounds:
+            # Kiểm tra kết nối trước khi gửi prompt
+            disconnected_players = []
+            for pid in list(self.players.keys()):
+                if not self.check_connection(pid):
+                    disconnected_players.append(pid)
+            
+            if disconnected_players:
+                for pid in disconnected_players:
+                    if self.handle_disconnect(pid):
+                        return  # Phòng cần dọn dẹp
+            
+            # Gửi prompt cho players còn lại
             for pid, conn in self.players.items():
                 try:
                     conn.sendall(f"\nRound {self.round}/{self.total_rounds} - Your move (rock/paper/scissors): ".encode())
-                except:
-                    return
+                except Exception as e:
+                    print(f"[Room {self.room_id}] Error sending prompt to Player {pid}: {e}")
+                    if self.handle_disconnect(pid):
+                        return
 
+            # Nhận moves từ players
             for pid, conn in self.players.items():
                 try:
                     move = conn.recv(1024).decode().strip().lower()
@@ -86,8 +162,16 @@ class Room:
                         move = None
                     with self.lock:
                         self.choices[pid] = move
-                except:
+                except Exception as e:
+                    print(f"[Room {self.room_id}] Error receiving move from Player {pid}: {e}")
+                    if self.handle_disconnect(pid):
+                        return
                     self.choices[pid] = None
+
+            # Kiểm tra nếu còn đủ players để tiếp tục
+            if len(self.players) < 2:
+                print(f"[Room {self.room_id}] Not enough players to continue")
+                return
 
             # Xử lý kết quả
             p1, p2 = self.choices.get(1), self.choices.get(2)
