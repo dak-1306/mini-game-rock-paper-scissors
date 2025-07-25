@@ -84,6 +84,38 @@ class RockPaperScissorsGUI:
         )
         self.connect_btn.pack(side=tk.RIGHT)
         
+        # Player name input (initially hidden)
+        self.name_frame = tk.Frame(conn_frame, bg='#34495e')
+        
+        tk.Label(
+            self.name_frame, 
+            text="Enter your name:", 
+            font=('Arial', 10, 'bold'), 
+            fg='#ecf0f1', 
+            bg='#34495e'
+        ).pack(pady=5)
+        
+        name_input_frame = tk.Frame(self.name_frame, bg='#34495e')
+        name_input_frame.pack(pady=5)
+        
+        self.name_entry = tk.Entry(
+            name_input_frame, 
+            font=('Arial', 12), 
+            width=20
+        )
+        self.name_entry.pack(side=tk.LEFT, padx=5)
+        self.name_entry.bind('<Return>', lambda event: self.submit_name())
+        
+        self.submit_name_btn = tk.Button(
+            name_input_frame,
+            text="✅ Submit",
+            font=('Arial', 10, 'bold'),
+            bg='#3498db',
+            fg='white',
+            command=self.submit_name
+        )
+        self.submit_name_btn.pack(side=tk.LEFT, padx=5)
+        
     def setup_status_frame(self, parent):
         status_frame = tk.LabelFrame(
             parent,
@@ -257,6 +289,7 @@ class RockPaperScissorsGUI:
         
         # Initially hide all game frames
         self.hide_all_game_frames()
+        self.name_frame.pack_forget()  # Hide name input initially
         
     def setup_log_frame(self, parent):
         log_frame = tk.LabelFrame(
@@ -283,6 +316,13 @@ class RockPaperScissorsGUI:
         self.rounds_frame.pack_forget()
         self.moves_frame.pack_forget()
         self.replay_frame.pack_forget()
+        
+    def show_name_input(self):
+        self.name_frame.pack(fill=tk.X, padx=10, pady=10)
+        self.name_entry.focus()
+        
+    def hide_name_input(self):
+        self.name_frame.pack_forget()
         
     def show_rounds_selection(self):
         self.hide_all_game_frames()
@@ -347,6 +387,11 @@ class RockPaperScissorsGUI:
         """Process incoming messages and update GUI accordingly"""
         self.log(f"📨 {message}")
         
+        # Show name input when server asks for name
+        if "Please enter your name:" in message:
+            self.root.after(0, self.show_name_input)
+            return
+        
         # Extract player and room info
         if "You are Player" in message and "Room" in message:
             parts = message.split()
@@ -374,6 +419,16 @@ class RockPaperScissorsGUI:
             self.root.after(0, self.hide_all_game_frames)
             self.root.after(1000, self.disconnect)
             
+    def submit_name(self):
+        if self.connected and self.client:
+            name = self.name_entry.get().strip()
+            if name:
+                self.client.sendall(name.encode())
+                self.log(f"📤 Sent name: {name}")
+                self.hide_name_input()
+            else:
+                messagebox.showwarning("Invalid Name", "Please enter a valid name!")
+                
     def submit_rounds(self):
         if self.connected and self.client:
             rounds = self.rounds_var.get()

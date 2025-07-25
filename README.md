@@ -5,6 +5,7 @@ A multiplayer Rock Paper Scissors game built with Python sockets and Tkinter GUI
 ## 🌟 Features
 
 ### ✅ Core Game Features
+
 - **Multiplayer Matchmaking**: Automatic pairing of 2 players
 - **Customizable Rounds**: Choose 3, 5, 7, 9, or 11 rounds
 - **Rock Paper Scissors Logic**: Classic game rules
@@ -12,6 +13,7 @@ A multiplayer Rock Paper Scissors game built with Python sockets and Tkinter GUI
 - **Replay System**: Play multiple games in sequence
 
 ### ✅ Advanced Features
+
 - **Beautiful GUI**: Modern Tkinter interface with emojis
 - **Disconnect Handling**: Graceful handling of player disconnections
 - **Room Management**: Automatic room cleanup
@@ -21,20 +23,25 @@ A multiplayer Rock Paper Scissors game built with Python sockets and Tkinter GUI
 ## 🚀 Quick Start
 
 ### 1. Start the Server
+
 ```bash
 python server.py
 ```
 
 ### 2. Launch GUI Clients
+
 ```bash
 python run_gui.py
 ```
+
 Or directly:
+
 ```bash
 python gui_client.py
 ```
 
 ### 3. For Console Version (Optional)
+
 ```bash
 python client.py
 ```
@@ -61,21 +68,25 @@ rock_paper_scissors/
 ## 🎨 GUI Features
 
 ### 🔌 Connection Panel
+
 - Server IP and port input
 - Connection status indicator
 - One-click connect/disconnect
 
 ### 📊 Game Status
+
 - Current connection status
 - Room and player information
 - Real-time updates
 
 ### 🎯 Game Controls
+
 - **Round Selection**: Radio buttons for 3/5/7/9/11 rounds
 - **Move Buttons**: Large, colorful Rock/Paper/Scissors buttons
 - **Replay Options**: Yes/No buttons for replay decisions
 
 ### 📝 Game Log
+
 - Timestamped message log
 - Automatic scrolling
 - Real-time game updates
@@ -83,16 +94,19 @@ rock_paper_scissors/
 ## 🛠️ Technical Details
 
 ### Server Architecture
+
 - **Multi-threaded**: Handles multiple concurrent games
 - **Room-based**: Players matched into separate rooms
 - **Disconnect Resilient**: Handles player disconnections gracefully
 
 ### Client Features
+
 - **Non-blocking GUI**: Responsive interface during gameplay
 - **Message Processing**: Smart message parsing for UI updates
 - **Error Handling**: Robust connection error management
 
 ### Network Protocol
+
 - **TCP Sockets**: Reliable message delivery
 - **Text-based**: Human-readable message format
 - **Stateful**: Server maintains game state
@@ -109,11 +123,13 @@ rock_paper_scissors/
 ## 🔧 Configuration
 
 ### Default Settings
+
 - **Server**: 127.0.0.1:65433
 - **Default Rounds**: 3
 - **Max Players per Room**: 2
 
 ### Customization
+
 - Change `HOST` and `PORT` in `server.py`
 - Modify default rounds in GUI
 - Adjust GUI colors in `gui_client.py`
@@ -121,11 +137,13 @@ rock_paper_scissors/
 ## 🚨 Troubleshooting
 
 ### Connection Issues
+
 - Ensure server is running first
 - Check firewall settings
 - Verify IP and port are correct
 
 ### GUI Issues
+
 - Ensure Tkinter is installed
 - Try console client as fallback
 - Check Python version (3.6+)
@@ -133,6 +151,7 @@ rock_paper_scissors/
 ## 📊 Game Statistics
 
 The server logs detailed game information:
+
 - Player connections/disconnections
 - Room creation and cleanup
 - Round-by-round results
